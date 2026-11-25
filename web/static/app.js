@@ -51,20 +51,20 @@
     minimax: "MiniMax Code",
     huawei: "华为码道",
   };
-  /* 真实 LOGO（从本机 App 资源提取，见 backend/web/static/logos/） */
+  /* 真实 LOGO（从本机 App 资源提取，见 backend/webstatic/logos/） */
   const LOGOS = {
-    workbuddy: "/static/logos/workbuddy-128.png",
-    traesolo: "/static/logos/traesolo-128.png",
-    qoder: "/static/logos/qoder-128.png",
-    minimax: "/static/logos/minimax-128.png",
-    huawei: "/static/logos/huawei-128.png",
+    workbuddy: "static/logos/workbuddy-128.png",
+    traesolo: "static/logos/traesolo-128.png",
+    qoder: "static/logos/qoder-128.png",
+    minimax: "static/logos/minimax-128.png",
+    huawei: "static/logos/huawei-128.png",
   };
   const LOGO_2X = {
-    workbuddy: "/static/logos/workbuddy-256.png",
-    traesolo: "/static/logos/traesolo-256.png",
-    qoder: "/static/logos/qoder-256.png",
-    minimax: "/static/logos/minimax-256.png",
-    huawei: "/static/logos/huawei-256.png",
+    workbuddy: "static/logos/workbuddy-256.png",
+    traesolo: "static/logos/traesolo-256.png",
+    qoder: "static/logos/qoder-256.png",
+    minimax: "static/logos/minimax-256.png",
+    huawei: "static/logos/huawei-256.png",
   };
   const EMOJI = { workbuddy: "🧩", traesolo: "🚀", qoder: "🅠", minimax: "◈", huawei: "☁" };
   function hasLogo(key) { return !!LOGOS[key]; }

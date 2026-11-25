@@ -6,7 +6,8 @@ enum Store {
     static var history: [[String: Any]] = []
 
     static func dir() -> URL {
-        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory
     }
     static var configURL: URL { dir().appendingPathComponent("config.json") }
     static var historyURL: URL { dir().appendingPathComponent("history.json") }

@@ -6,18 +6,19 @@ struct WebView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> WKWebView {
         let cfg = WKWebViewConfiguration()
-        cfg.setURLSchemeHandler(context.coordinator, forURLScheme: "signhub")
         cfg.userContentController.add(context.coordinator, name: "signhub")
-        cfg.userContentController.addUserScript(WKUserScript(source: Self.bridgeJS(), injectionTime: .atDocumentStart, forMainFrameOnly: false))
-        cfg.userContentController.addUserScript(WKUserScript(source: Self.patchJS(), injectionTime: .atDocumentEnd, forMainFrameOnly: false))
+        cfg.userContentController.addUserScript(WKUserScript(source: Self.bridgeJS(), injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        cfg.userContentController.addUserScript(WKUserScript(source: Self.patchJS(), injectionTime: .atDocumentEnd, forMainFrameOnly: true))
 
         let web = WKWebView(frame: .zero, configuration: cfg)
-        web.navigationDelegate = context.coordinator
         web.isOpaque = false
         web.backgroundColor = UIColor(red: 0.04, green: 0.043, blue: 0.063, alpha: 1)
         web.scrollView.contentInsetAdjustmentBehavior = .never
         context.coordinator.webView = web
-        web.load(URLRequest(url: URL(string: "signhub://app/index.html")!))
+
+        if let webDir = Bundle.main.resourceURL?.appendingPathComponent("web") {
+            web.loadFileURL(webDir.appendingPathComponent("index.html"), allowingReadAccessTo: webDir)
+        }
         return web
     }
 
@@ -33,9 +34,8 @@ struct WebView: UIViewRepresentable {
 
           window.__signhubResp = function(text){
             try {
-              var status = 200;
               var body = (typeof text === 'string') ? text : JSON.stringify(text);
-              return new Response(body, { status: status, headers: {'Content-Type':'application/json'} });
+              return new Response(body, { status: 200, headers: {'Content-Type':'application/json'} });
             } catch(e) {
               return new Response(String(text), { status: 200, headers: {'Content-Type':'application/json'} });
             }
@@ -113,7 +113,7 @@ struct WebView: UIViewRepresentable {
 
     // MARK: - Coordinator
 
-    final class Coordinator: NSObject, WKScriptMessageHandler, WKURLSchemeHandler, WKNavigationDelegate {
+    final class Coordinator: NSObject, WKScriptMessageHandler {
         weak var webView: WKWebView?
 
         func userContentController(_ ucc: WKUserContentController, didReceive message: WKScriptMessage) {
@@ -135,7 +135,6 @@ struct WebView: UIViewRepresentable {
                 if cmd == "resetCreds" {
                     LocalApi.resetCreds(["key": (dict["key"] as? String) ?? ""])
                 }
-                // openLogin / openAccounts / openMultiAccounts / runAutoNow 等在 iOS 端暂为 no-op
             }
         }
 
@@ -145,54 +144,6 @@ struct WebView: UIViewRepresentable {
                 return str
             }
             return "\"\""
-        }
-
-        // MARK: 静态资源
-
-        func webView(_ webView: WKWebView, start urlSchemeTask: WKURLSchemeTask) {
-            guard let url = urlSchemeTask.request.url else {
-                urlSchemeTask.didFailWithError(URLError(.badURL))
-                return
-            }
-            var rel = url.path
-            if rel.hasPrefix("/") { rel = String(rel.dropFirst()) }
-            if rel.isEmpty { rel = "index.html" }
-
-            let webRoot = Bundle.main.resourceURL?.appendingPathComponent("web")
-            let fileURL = webRoot?.appendingPathComponent(rel)
-
-            guard let fileURL = fileURL, FileManager.default.fileExists(atPath: fileURL.path),
-                  let data = try? Data(contentsOf: fileURL) else {
-                let resp = HTTPURLResponse(url: url, statusCode: 404, httpVersion: "HTTP/1.1", headerFields: ["Content-Type": "text/plain"])
-                urlSchemeTask.didReceive(resp ?? HTTPURLResponse())
-                urlSchemeTask.didReceive(Data("not found".utf8))
-                urlSchemeTask.didFinish()
-                return
-            }
-
-            let mime = Self.mime(fileURL.pathExtension)
-            let resp = HTTPURLResponse(url: url, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: [
-                "Content-Type": mime,
-                "Content-Length": "\(data.count)",
-                "Cache-Control": "no-store",
-            ])
-            urlSchemeTask.didReceive(resp ?? HTTPURLResponse())
-            urlSchemeTask.didReceive(data)
-            urlSchemeTask.didFinish()
-        }
-
-        func webView(_ webView: WKWebView, stop urlSchemeTask: WKURLSchemeTask) {}
-
-        static func mime(_ ext: String) -> String {
-            switch ext.lowercased() {
-            case "html": return "text/html; charset=utf-8"
-            case "js": return "application/javascript; charset=utf-8"
-            case "css": return "text/css; charset=utf-8"
-            case "png": return "image/png"
-            case "json", "webmanifest": return "application/json"
-            case "svg": return "image/svg+xml"
-            default: return "application/octet-stream"
-            }
         }
     }
 }
