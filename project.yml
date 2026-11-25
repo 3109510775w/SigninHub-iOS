@@ -1,0 +1,48 @@
+name: SigninHub
+options:
+  bundleIdPrefix: com.signinhub
+  deploymentTarget:
+    iOS: "15.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "15.0"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  SigninHub:
+    type: application
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - SigninHub
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.signinhub.app
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: ""
+        DEVELOPMENT_TEAM: ""
+    info:
+      path: SigninHub/Info.plist
+      properties:
+        CFBundleDisplayName: 签到中心
+        UILaunchScreen: {}
+        UIBackgroundModes:
+          - fetch
+          - processing
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.signinhub.app.refresh
+        NSLocalNetworkUsageDescription: 用于与局域网内自建后端通信（可选）
+        ITSAppUsesNonExemptEncryption: false
+schemes:
+  SigninHub:
+    build:
+      targets:
+        SigninHub: all
+    run:
+      config: Debug
+    archive:
+      config: Release
+
