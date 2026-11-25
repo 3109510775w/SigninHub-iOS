@@ -71,54 +71,52 @@ enum LocalApi {
 
     // MARK: - 主入口
 
-    static func handle(method: String, path: String, body: String) async -> String {
-        let (p, q) = splitQuery(path)
-
+    /// 无网络、可直接同步返回的接口；返回 nil 表示需要走异步（handleAsync）
+    static func handleSync(_ p: String, _ q: [String: String], method: String, body: String) -> String? {
         switch p {
         case "/api/ping":
             return jsonString(["ok": true, "version": "2.25.0", "appVersion": "2.25.0", "local": true] as [String: Any])
-
         case "/api/status":
-            return jsonString(await status())
-
+            return jsonString(status())
         case "/api/logs":
             return jsonString(["logs": logs(q)])
-
         case "/api/config":
             if method == "POST" {
                 mergeConfig(parseBody(body))
                 return jsonString(["ok": true])
             }
             return jsonString(maskedConfig())
-
-        case "/api/checkin/all":
-            return jsonString(await runAll())
-
-        case "/api/wb_assets":
-            return jsonString(await wbAssets())
-
-        case "/api/refresh_totals":
-            return jsonString(["ok": true, "totals": await totals()])
-
-        case "/api/test_notify":
-            return jsonString(await testNotify())
-
         case "/api/reset_creds":
             resetCreds(parseBody(body))
             return jsonString(["ok": true])
-
         case "/api/growth", "/api/growth/room", "/api/growth/claim", "/api/growth/daily", "/api/growth/daily/run":
             return jsonString(["ok": false, "error": "iOS 版暂未移植成长中心", "results": [Any]()] as [String: Any])
-
         case "/api/heat":
             return jsonString(["ok": true, "cells": [Any](), "today": [String: Any](), "summary": ""] as [String: Any])
-
         case "/api/stats":
             return jsonString(["ok": true] as [String: Any])
-
         case "/api/auto_status":
             return jsonString(["ok": false, "running": false, "last_run": "", "diagnostics": [Any]()] as [String: Any])
+        default:
+            // 异步路径（真实网络请求）
+            if p == "/api/checkin/all" || p == "/api/wb_assets" || p == "/api/refresh_totals" || p == "/api/test_notify"
+                || p.hasPrefix("/api/checkin/") || p.hasPrefix("/api/test/") {
+                return nil
+            }
+            return jsonString(["error": "unknown path \(p)"])
+        }
+    }
 
+    static func handleAsync(_ p: String, _ q: [String: String]) async -> String {
+        switch p {
+        case "/api/checkin/all":
+            return jsonString(await runAll())
+        case "/api/wb_assets":
+            return jsonString(await wbAssets())
+        case "/api/refresh_totals":
+            return jsonString(["ok": true, "totals": await totals()])
+        case "/api/test_notify":
+            return jsonString(await testNotify())
         default:
             if p.hasPrefix("/api/checkin/") {
                 let key = String(p.dropFirst("/api/checkin/".count))
@@ -134,7 +132,7 @@ enum LocalApi {
 
     // MARK: - status
 
-    static func status() async -> [String: Any] {
+    static func status() -> [String: Any] {
         let day = Store.todayStr()
         var rows: [[String: Any]] = []
 

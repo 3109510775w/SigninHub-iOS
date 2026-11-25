@@ -123,12 +123,13 @@ struct WebView: UIViewRepresentable {
                 let method = (dict["method"] as? String) ?? "GET"
                 let path = (dict["path"] as? String) ?? ""
                 let body = (dict["body"] as? String) ?? ""
-                Task {
-                    let result = await LocalApi.handle(method: method, path: path, body: body)
-                    let arg = Self.quoteJS(result)
-                    let js = "window.__signhubPending && window.__signhubPending['\(id)'] ? window.__signhubPending['\(id)'](\(arg)) : null;"
-                    await MainActor.run {
-                        self.webView?.evaluateJavaScript(js, completionHandler: nil)
+                let (p, q) = LocalApi.splitQuery(path)
+                if let result = LocalApi.handleSync(p, q, method: method, body: body) {
+                    respond(id, result)
+                } else {
+                    Task {
+                        let result = await LocalApi.handleAsync(p, q)
+                        await MainActor.run { self.respond(id, result) }
                     }
                 }
             } else if let cmd = dict["cmd"] as? String {
@@ -136,6 +137,12 @@ struct WebView: UIViewRepresentable {
                     LocalApi.resetCreds(["key": (dict["key"] as? String) ?? ""])
                 }
             }
+        }
+
+        func respond(_ id: String, _ result: String) {
+            let arg = Self.quoteJS(result)
+            let js = "window.__signhubPending && window.__signhubPending['\(id)'] ? window.__signhubPending['\(id)'](\(arg)) : null;"
+            webView?.evaluateJavaScript(js, completionHandler: nil)
         }
 
         static func quoteJS(_ s: String) -> String {
