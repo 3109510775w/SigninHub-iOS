@@ -3,8 +3,7 @@ import SwiftUI
 @main
 struct SigninHubApp: App {
     init() {
-        Scheduler.register()
-        Scheduler.requestNotifications()
+        Store.boot()
     }
 
     var body: some Scene {

@@ -17,6 +17,8 @@ targets:
     deploymentTarget: "15.0"
     sources:
       - SigninHub
+      - path: web
+        type: folder
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.signinhub.app
@@ -31,10 +33,6 @@ targets:
         UILaunchScreen: {}
         UIBackgroundModes:
           - fetch
-          - processing
-        BGTaskSchedulerPermittedIdentifiers:
-          - com.signinhub.app.refresh
-        NSLocalNetworkUsageDescription: 用于与局域网内自建后端通信（可选）
         ITSAppUsesNonExemptEncryption: false
 schemes:
   SigninHub:
@@ -45,4 +43,3 @@ schemes:
       config: Debug
     archive:
       config: Release
-
