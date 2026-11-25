@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import SwiftUI
 
 /// 应用主模型：配置读写 + 签到编排 + 历史记录
 final class AppModel: ObservableObject {

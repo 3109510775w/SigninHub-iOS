@@ -46,10 +46,10 @@ struct AppConfig: Codable {
     static var `default`: AppConfig {
         AppConfig(
             providers: [
-                ServiceConfig(kind: .workbuddy, tokenKey: "wbToken", tokenPrefix: "Bearer ",
-                              http: HttpProviderConfig()),
-                ServiceConfig(kind: .traesolo, tokenKey: "traeToken", tokenPrefix: "Cloud-IDE-JWT ",
-                              http: HttpProviderConfig()),
+                ServiceConfig(kind: .workbuddy, http: HttpProviderConfig(),
+                              tokenKey: "wbToken", tokenPrefix: "Bearer "),
+                ServiceConfig(kind: .traesolo, http: HttpProviderConfig(),
+                              tokenKey: "traeToken", tokenPrefix: "Cloud-IDE-JWT "),
                 ServiceConfig(kind: .doubao, enabled: false, http: HttpProviderConfig())
             ]
         )
