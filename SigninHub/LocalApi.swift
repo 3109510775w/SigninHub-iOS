@@ -6,11 +6,36 @@ enum LocalApi {
     // MARK: - JSON 工具
 
     static func jsonString(_ obj: Any) -> String {
-        guard JSONSerialization.isValidJSONObject(obj),
-              let d = try? JSONSerialization.data(withJSONObject: obj) else {
+        let safe = sanitizeForJSON(obj)
+        guard JSONSerialization.isValidJSONObject(safe),
+              let d = try? JSONSerialization.data(withJSONObject: safe) else {
             return "{\"error\":\"bad json\"}"
         }
         return String(data: d, encoding: .utf8) ?? "{}"
+    }
+
+    /// 递归净化：把所有非 JSON 安全值（NaN/inf/装箱 optional/未知类型）转成安全值，
+    /// 保证 NSJSONSerialization 永不抛 ObjC 异常。
+    static func sanitizeForJSON(_ v: Any) -> Any {
+        if let d = v as? [String: Any] {
+            var out: [String: Any] = [:]
+            for (k, val) in d { out[k] = sanitizeForJSON(val) }
+            return out
+        }
+        if let a = v as? [Any] {
+            return a.map { sanitizeForJSON($0) }
+        }
+        if let n = v as? NSNumber {
+            if CFGetTypeID(n as CFTypeRef) == CFBooleanGetTypeID() { return n.boolValue }
+            let dbl = n.doubleValue
+            if dbl.isNaN || dbl.isInfinite { return 0 }
+            return n
+        }
+        if let s = v as? String { return s }
+        if let b = v as? Bool { return b }
+        if v is NSNull { return NSNull() }
+        // 兜底：任何不可序列化类型 → 字符串
+        return String(describing: v)
     }
 
     static func splitQuery(_ path: String) -> (String, [String: String]) {
