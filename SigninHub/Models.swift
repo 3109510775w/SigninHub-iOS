@@ -1,37 +1,41 @@
 import Foundation
 
-/// 服务种类（豆包已下线，仅保留占位）
 enum ServiceKind: String, Codable, CaseIterable, Hashable {
     case workbuddy
     case traesolo
     case doubao
+
+    var label: String {
+        switch self {
+        case .workbuddy: return "WorkBuddy"
+        case .traesolo: return "Trae Solo"
+        case .doubao: return "豆包（已下线）"
+        }
+    }
 }
 
-/// 「接口模式」配置：URL / 请求头 / 请求体 / 成功判定
+/// 「接口模式」配置（其它服务 / 兜底）
 struct HttpProviderConfig: Codable {
-    var method: String = "POST"          // GET / POST / PUT
+    var method: String = "POST"
     var url: String = ""
     var headers: [String: String] = [:]
     var body: [String: String] = [:]
-    var bodyType: String = "json"        // "json" | "form"
-    var successExpr: String = "code"     // 支持 data.status 这种点路径
+    var bodyType: String = "json"
+    var successExpr: String = "code"
     var successValue: String = "0"
 }
 
-/// 单个签到服务
 struct ServiceConfig: Codable, Identifiable {
     var id: ServiceKind { kind }
     var kind: ServiceKind
     var enabled: Bool = true
+    var mode: String = "native"   // "native" | "http"
     var http: HttpProviderConfig
-
-    // 可选：从 Keychain 读取 token 并注入到指定请求头
-    var tokenKey: String? = nil          // 例如 "wbToken" / "traeToken"
-    var tokenHeader: String = "Authorization"
-    var tokenPrefix: String = "Bearer "  // Trae 用 "Cloud-IDE-JWT "
+    var region: String = "cn"
+    var host: String = ""
+    var deviceId: String = ""     // Trae 设备号（16 位数字），非敏感
 }
 
-/// 通知配置（Bark / PushPlus / 钉钉 / 飞书 / 企业微信 webhook）
 struct NotifyConfig: Codable {
     var enabled: Bool = false
     var webhookURL: String = ""
@@ -40,23 +44,17 @@ struct NotifyConfig: Codable {
 struct AppConfig: Codable {
     var providers: [ServiceConfig]
     var schedulerTimes: [String] = ["08:30"]
-    var jitterMin: Int = 0
     var notify: NotifyConfig?
 
     static var `default`: AppConfig {
-        AppConfig(
-            providers: [
-                ServiceConfig(kind: .workbuddy, http: HttpProviderConfig(),
-                              tokenKey: "wbToken", tokenPrefix: "Bearer "),
-                ServiceConfig(kind: .traesolo, http: HttpProviderConfig(),
-                              tokenKey: "traeToken", tokenPrefix: "Cloud-IDE-JWT "),
-                ServiceConfig(kind: .doubao, enabled: false, http: HttpProviderConfig())
-            ]
-        )
+        AppConfig(providers: [
+            ServiceConfig(kind: .workbuddy, mode: "native", http: HttpProviderConfig(), region: "cn"),
+            ServiceConfig(kind: .traesolo, mode: "native", http: HttpProviderConfig(), region: "cn"),
+            ServiceConfig(kind: .doubao, enabled: false, mode: "http", http: HttpProviderConfig()),
+        ])
     }
 }
 
-/// 一条签到记录
 struct CheckinResult: Codable, Identifiable {
     var id = UUID()
     var kind: String
